@@ -12,6 +12,6 @@ public interface EntryDataService {
 
 	public EntryData save(EntryDataForm form);
 
-	public List<EntryData> search(int ledgerId, LocalDate from, LocalDate to);
+	public List<EntryData> search(Integer ledgerId, LocalDate from, LocalDate to);
 
 }

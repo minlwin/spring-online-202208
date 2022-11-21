@@ -24,39 +24,33 @@ public class LedgerServiceImpl implements LedgerService {
 
 	private NamedParameterJdbcTemplate template;
 	private SimpleJdbcInsert insert;
-	
+
 	private static final String SELECT_SQL = """
-			select l.id, l.name, l.type, l.description, l.deleted, m.id ownerId, m.name ownerName 
+			select l.id, l.name, l.type, l.description, l.deleted, m.id ownerId, m.name ownerName
 			from ledger l join member m on l.owner_id = m.id""";
-	
+
 	public LedgerServiceImpl(DataSource dataSource) {
 		template = new NamedParameterJdbcTemplate(dataSource);
 		insert = new SimpleJdbcInsert(dataSource);
 		insert.setTableName("ledger");
 		insert.setGeneratedKeyName("id");
-		insert.setColumnNames(List.of(
-				"name", "type", "owner_id", "description", "deleted"
-		));
+		insert.setColumnNames(List.of("name", "type", "owner_id", "description", "deleted"));
 	}
 
 	public List<Ledger> getUserLedgers() {
 		var username = SecurityContextHolder.getContext().getAuthentication().getName();
-		return template.query(SELECT_SQL.concat(" m.email = :username"), 
-				Map.of("username", username), 
+		return template.query(SELECT_SQL.concat(" m.email = :username"), Map.of("username", username),
 				new BeanPropertyRowMapper<>(Ledger.class));
 	}
 
-	public void save(LedgerForm form) {
-		if(form.getId() == 0) {
-			insert(form);
-		} else {
-			update(form);
-		}
+	public Ledger save(LedgerForm form) {
+		var id = form.getId() == 0 ? insert(form) : update(form);
+		return findById(id);
 	}
 
 	public Ledger findById(int id) {
-		return template.queryForObject(SELECT_SQL.concat(" l.id = :id"), 
-				Map.of("id", id), new BeanPropertyRowMapper<>(Ledger.class));
+		return template.queryForObject(SELECT_SQL.concat(" l.id = :id"), Map.of("id", id),
+				new BeanPropertyRowMapper<>(Ledger.class));
 	}
 
 	public List<YearlyReport> getYearlyReport(int year) {
@@ -69,20 +63,19 @@ public class LedgerServiceImpl implements LedgerService {
 		return null;
 	}
 
-	private void update(LedgerForm form) {
-		template.update("""
-			update ledger set name = :name, type = :type, description = :description, deleted = :deleted 
-			where id = :id""", 
-				new BeanPropertySqlParameterSource(form));
+	private int update(LedgerForm form) {
+		if (template.update("""
+				update ledger set name = :name, type = :type, description = :description, deleted = :deleted
+				where id = :id""", new BeanPropertySqlParameterSource(form)) > 0) {
+			return form.getId();
+		}
+
+		return 0;
 	}
 
-	private void insert(LedgerForm form) {
-		insert.execute(Map.of(
-				"name", form.getName(),
-				"type", form.getType(),
-				"description", form.getDescription(),
-				"deleted", form.isDeleted()
-				));
+	private int insert(LedgerForm form) {
+		return insert.executeAndReturnKey(Map.of("name", form.getName(), "type", form.getType(), "description",
+				form.getDescription(), "deleted", form.isDeleted())).intValue();
 	}
 
 }

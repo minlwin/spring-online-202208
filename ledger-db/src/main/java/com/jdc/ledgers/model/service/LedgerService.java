@@ -12,7 +12,7 @@ public interface LedgerService {
 
 	public List<Ledger> getUserLedgers();
 
-	public void save(LedgerForm form);
+	public Ledger save(LedgerForm form);
 
 	public Ledger findById(int id);
 
