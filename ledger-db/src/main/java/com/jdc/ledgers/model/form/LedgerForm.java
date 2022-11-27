@@ -11,6 +11,17 @@ public class LedgerForm {
 	private String description;
 
 	private boolean deleted;
+	
+	public LedgerForm() {
+	}
+
+	public LedgerForm(String name, LedgerType type, String description, boolean deleted) {
+		super();
+		this.name = name;
+		this.type = type;
+		this.description = description;
+		this.deleted = deleted;
+	}
 
 	public enum LedgerType {
 		Credit, Debit
